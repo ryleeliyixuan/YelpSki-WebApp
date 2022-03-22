@@ -1,0 +1,83 @@
+<!-- TODO 5: Strucure and Styling Sign-in Page -->
+<% layout('./layouts/boilerplate')%>
+<div class="container d-flex justify-content-center align-items-center mt-5">
+  <div class="row">
+      <div class="col-md-6 offset-md-3 col-xl-4 offset-xl-4">
+          <div class="card shadow">
+              <img src="https://images.unsplash.com/photo-1614358536373-1ce27819009e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1769&q=80"
+                  alt="" class="card-img-top" />
+              <div class="card-body">
+                  <h5 class="card-title">Login</h5>
+                  <form id="login-form" action="/login" method="POST" class="validated-form" novalidate>
+                      <div class="mb-3">
+                          <label class="form-label" for="login">Email</label>
+                          <input class="form-control" type="text" id="login" name="login" autofocus required>
+                          <div class="valid-feedback">
+                              Looks good!
+                          </div>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label" for="password">Password</label>
+                          <input class="form-control" type="password" id="password" name="password" required>
+                          <div class="valid-feedback">
+                              Looks good!
+                          </div>
+                      </div>
+                      <button class="btn btn-success btn-block">Login</button>
+                  </form>
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+<!-- TODO 5: Styling Sign-in Page -->
+
+<script src="https://www.gstatic.com/firebasejs/9.6.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.4/firebase-auth-compat.js"></script>
+
+<script>
+  window.onload = () => {
+    const firebaseConfig = {
+      apiKey: "AIzaSyCStvYOvOWSNQp4c9sUhZciF-TLYRplstg",
+      authDomain: "milestone-1-ea86a.firebaseapp.com",
+      projectId: "milestone-1-ea86a",
+      storageBucket: "milestone-1-ea86a.appspot.com",
+      messagingSenderId: "550924621635",
+      appId: "1:550924621635:web:c24b86611fec3a3de201f6",
+      measurementId: "G-377J7F5SWR",
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+
+    app.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+
+    document
+      .getElementById("login-form")
+      .addEventListener("submit", (event) => {
+        event.preventDefault();
+        const login = event.target.login.value;
+        const password = event.target.password.value;
+
+        app.auth().signInWithEmailAndPassword(login, password)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            user.getIdToken().then((idToken) => {
+              fetch('/sessionLogin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  idToken: idToken,
+                  plan: 'free' 
+                })}).then(() => window.location.assign('/dashboard'))  // Redirect the user to the /dashboard
+            })
+          })
+          .catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+          });
+        // return false;
+      });
+  };
+</script>
+
+</html>
