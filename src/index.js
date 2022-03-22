@@ -14,6 +14,11 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+// TODO 4: Add Boilerplate
+const ejsMate = require("ejs-mate");
+app.engine("ejs", ejsMate);
+// TODO 4: Add Boilerplate
+
 // use cookies
 app.use(cookieParser());
 app.use(bodyParser.json());
