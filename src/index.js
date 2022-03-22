@@ -51,6 +51,8 @@ app.post("/sessionLogin", async (req, res) => {
         const options = { maxAge: expiresIn, httpOnly: true, secure: true };
         console.log("set session");
         res.cookie("session", sessionCookie, options);
+        // TODO 1: Set up log out + get idToken for each request
+        res.cookie("idToken", idToken, options);
         res.status(200).send(JSON.stringify({ status: "success" }));
       },
       (error) => {
@@ -70,6 +72,11 @@ app.get("/sign-up", function (req, res) {
 app.get("/dashboard", authMiddleware, async function (req, res) {
   const feed = await userFeed.get();
   res.render("pages/dashboard", { user: req.user, feed });
+});
+
+// TODO 1: Set up log out + get idToken for each request
+app.get("/log-out", function (req, res) {
+  res.redirect("/sessionLogout");
 });
 
 app.get("/sessionLogout", (req, res) => {
