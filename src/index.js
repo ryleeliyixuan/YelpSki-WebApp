@@ -1,3 +1,4 @@
+const functions = require("firebase-functions");
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
@@ -35,7 +36,7 @@ app.use("/static", express.static("static/"));
 
 // TODO 1: Set up log out + get idToken for each request
 app.use((req, res, next) => {
-  res.locals.user = req.cookies.idToken;
+  res.locals.user = req.cookies.__session;
   next();
 });
 
@@ -55,7 +56,7 @@ app.post("/sessionLogin", async (req, res) => {
         // Set cookie policy for session cookie.
         const options = { maxAge: expiresIn, httpOnly: true, secure: true };
         console.log("set session");
-        res.cookie("session", sessionCookie, options);
+        res.cookie("__session", sessionCookie, options);
         // TODO 1: Set up log out + get idToken for each request
         res.cookie("idToken", idToken, options);
         res.status(200).send(JSON.stringify({ status: "success" }));
@@ -85,7 +86,7 @@ app.get("/log-out", function (req, res) {
 });
 
 app.get("/sessionLogout", (req, res) => {
-  res.clearCookie("session");
+  res.clearCookie("__session");
   res.clearCookie("idToken");
   res.redirect("/sign-in");
 });
@@ -97,5 +98,6 @@ app.post("/dog-messages", authMiddleware, async (req, res) => {
   res.redirect("/dashboard");
 });
 
-app.listen(port);
-console.log("Server started at http://localhost:" + port);
+exports.app = functions.https.onRequest(app);
+// app.listen(port);
+// console.log("Server started at http://localhost:" + port);
