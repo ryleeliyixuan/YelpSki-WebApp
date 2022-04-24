@@ -102,7 +102,7 @@ app.get("/sign-up", function (req, res) {
 });
 
 app.get("/dashboard", authMiddleware, async function (req, res) {
-  const feed = await userFeed.get();
+  const feed = await ResortService.getAllResorts();
   res.render("pages/dashboard", { user: req.user, feed });
 });
 
@@ -131,8 +131,8 @@ app.post("/resorts", authMiddleware, async (req, res) => {
 
   ResortService.createResort(userId, title, location, price, description).then(
     () => {
-      res.end(JSON.stringify({ status: "success - saved to firebase!" }));
-      // res.redirect("/dashboard");
+      // res.end(JSON.stringify({ status: "success - saved to firebase!" }));
+      res.redirect("/dashboard");
     }
   );
 });

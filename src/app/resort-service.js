@@ -23,4 +23,16 @@ module.exports = {
       return doc.data();
     }
   },
+
+  getAllResorts: async () => {
+    const doc = db.collection("resorts");
+    const resorts = await doc.get();
+
+    resorts.forEach((doc) => {
+      doc.data = doc.data();
+      // console.log(doc.id, "=>", doc.data);
+    });
+
+    return resorts;
+  },
 };
