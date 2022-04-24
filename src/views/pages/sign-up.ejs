@@ -10,6 +10,13 @@
                     <h5 class="card-title">Register</h5>
                     <form id="login-form" action="/register" method="POST" class="validated-form" novalidate>
                         <div class="mb-3">
+                          <label class="form-label" for="username">Username</label>
+                          <input class="form-control" type="text" id="username" name="username" required autofocus>
+                          <div class="valid-feedback">
+                              Looks good!
+                          </div>
+                      </div>
+                        <div class="mb-3">
                             <label class="form-label" for="login">Email</label>
                             <input class="form-control" type="email" id="login" name="login" required autofocus>
                             <div class="valid-feedback">
@@ -37,7 +44,6 @@
 
   <script>
     window.onload = () => {
-      console.log("Running onload");
       const firebaseConfig = {
         apiKey: "AIzaSyCStvYOvOWSNQp4c9sUhZciF-TLYRplstg",
         authDomain: "milestone-1-ea86a.firebaseapp.com",
@@ -58,34 +64,38 @@
           event.preventDefault();
           const login = event.target.login.value;
           const password = event.target.password.value;
+          const username = event.target.username.value; // get username
 
           app
             .auth()
             .createUserWithEmailAndPassword(login, password)
-            .then((userCredential) => {
-              // Create a new user using the Firebase SDK for Web
-              const user = userCredential.user;
-              // Get the users ID token
-              user.getIdToken().then((idToken) => {
+            .then(({user}) => {
+              return user.getIdToken().then((idToken) => {
                 // Start a new session with the users ID token
-                fetch("/sessionLogin", {
+                return fetch("/sessionLogin", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    idToken: idToken,
-                    plan: "free",
-                  }),
-                }).then(() => {
-                  console.log("success!");
-                  // Redirect the user to the /dashboard
-                  window.location.replace("/dashboard");
+                  headers: { 
+                    Accept: "application/json", 
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({idToken, username, signInType: 'register'}),
                 });
+                // .then(() => {
+                //   console.log("Here - success!");
+                //   // Redirect the user to the /dashboard
+                //   window.location.replace("/dashboard");
+                // });
               });
+            })
+            .then(() => {
+              return app.auth().signOut();
+            })
+            .then(() => {
+              window.location.replace("/dashboard");
             })
             .catch((error) => {
               const errorCode = error.code;
               const errorMessage = error.message;
-              // ..
             });
           return false;
         });

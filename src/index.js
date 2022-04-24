@@ -6,17 +6,19 @@ const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
 const app = express();
 const port = process.env.PORT || 8080;
-
 const serviceAccount = require("../config/serviceAccountKey.json");
-const userFeed = require("./app/user-feed");
-const authMiddleware = require("./app/auth-middleware");
-const { nextTick } = require("process");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+const userFeed = require("./app/user-feed");
+const UserService = require("./app/user-service"); // TODO 10: USERSERVICE
+const authMiddleware = require("./app/auth-middleware");
+const { nextTick } = require("process");
+
 // TODO 4: Add Boilerplate
 const ejsMate = require("ejs-mate");
+const { sign } = require("crypto");
 app.engine("ejs", ejsMate);
 // TODO 4: Add Boilerplate
 
@@ -36,7 +38,7 @@ app.use("/static", express.static("static/"));
 
 // TODO 1: Set up log out + get idToken for each request
 app.use((req, res, next) => {
-  res.locals.user = req.cookies.__session;
+  res.locals.user = req.cookies.session;
   next();
 });
 
@@ -45,21 +47,43 @@ app.get("/", function (req, res) {
   res.render("pages/index");
 });
 
-app.post("/sessionLogin", async (req, res) => {
-  const idToken = req.body.idToken;
+app.post("/sessionLogin", (req, res) => {
+  const idToken = req.body.idToken.toString();
+  const username = req.body.username; // get username
+  const signInType = req.body.signInType;
+
   const expiresIn = 60 * 60 * 24 * 5 * 1000;
+
   admin
     .auth()
     .createSessionCookie(idToken, { expiresIn })
     .then(
       (sessionCookie) => {
         // Set cookie policy for session cookie.
-        const options = { maxAge: expiresIn, httpOnly: true, secure: true };
-        console.log("set session");
-        res.cookie("__session", sessionCookie, options);
+        const options = { maxAge: expiresIn, httpOnly: true };
+        res.cookie("session", sessionCookie, options);
         // TODO 1: Set up log out + get idToken for each request
-        res.cookie("idToken", idToken, options);
-        res.status(200).send(JSON.stringify({ status: "success" }));
+        // res.cookie("idToken", idToken, options);
+        admin
+          .auth()
+          .verifySessionCookie(sessionCookie, true)
+          .then((userData) => {
+            // TODO 10: Take user data and save it to firebase
+            console.log("Logged in:", userData.email);
+            const id = userData.sub;
+            const email = userData.email;
+
+            if (signInType === "register") {
+              // save it to firebase
+              UserService.createUser(id, email, username).then(() => {
+                res.end(
+                  JSON.stringify({ status: "success - saved to firebase!" })
+                );
+              });
+            } else {
+              res.end(JSON.stringify({ status: "success" }));
+            }
+          });
       },
       (error) => {
         res.status(401).send("UNAUTHORIZED REQUEST!");
@@ -86,7 +110,7 @@ app.get("/log-out", function (req, res) {
 });
 
 app.get("/sessionLogout", (req, res) => {
-  res.clearCookie("__session");
+  res.clearCookie("session");
   res.clearCookie("idToken");
   res.redirect("/sign-in");
 });
