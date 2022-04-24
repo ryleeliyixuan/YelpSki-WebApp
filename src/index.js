@@ -13,6 +13,8 @@ admin.initializeApp({
 
 const userFeed = require("./app/user-feed");
 const UserService = require("./app/user-service"); // TODO 10: USERSERVICE
+const ResortService = require("./app/resort-service");
+
 const authMiddleware = require("./app/auth-middleware");
 const { nextTick } = require("process");
 
@@ -62,8 +64,7 @@ app.post("/sessionLogin", (req, res) => {
         // Set cookie policy for session cookie.
         const options = { maxAge: expiresIn, httpOnly: true };
         res.cookie("session", sessionCookie, options);
-        // TODO 1: Set up log out + get idToken for each request
-        // res.cookie("idToken", idToken, options);
+
         admin
           .auth()
           .verifySessionCookie(sessionCookie, true)
@@ -72,6 +73,7 @@ app.post("/sessionLogin", (req, res) => {
             console.log("Logged in:", userData.email);
             const id = userData.sub;
             const email = userData.email;
+            res.cookie("userId", id);
 
             if (signInType === "register") {
               // save it to firebase
@@ -111,15 +113,28 @@ app.get("/log-out", function (req, res) {
 
 app.get("/sessionLogout", (req, res) => {
   res.clearCookie("session");
-  res.clearCookie("idToken");
+  res.clearCookie("userId");
   res.redirect("/sign-in");
 });
 
-app.post("/dog-messages", authMiddleware, async (req, res) => {
-  const msg = req.body.message;
-  const user = req.user;
-  const feed = await userFeed.add(user, msg);
-  res.redirect("/dashboard");
+app.get("/resorts", authMiddleware, async function (req, res) {
+  const feed = await userFeed.get();
+  res.render("pages/resorts/new", { user: req.user, feed });
+});
+
+app.post("/resorts", authMiddleware, async (req, res) => {
+  const userId = req.cookies.userId;
+  const title = req.body.title;
+  const location = req.body.location;
+  const price = req.body.price;
+  const description = req.body.description;
+
+  ResortService.createResort(userId, title, location, price, description).then(
+    () => {
+      res.end(JSON.stringify({ status: "success - saved to firebase!" }));
+      // res.redirect("/dashboard");
+    }
+  );
 });
 
 exports.app = functions.https.onRequest(app);
