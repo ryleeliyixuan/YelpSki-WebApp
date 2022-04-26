@@ -106,11 +106,6 @@ app.get("/sign-up", function (req, res) {
   res.render("pages/sign-up");
 });
 
-app.get("/dashboard", authMiddleware, async function (req, res) {
-  const feed = await ResortService.getAllResorts();
-  res.render("pages/dashboard", { user: req.user, feed });
-});
-
 // TODO 1: Set up log out + get idToken for each request
 app.get("/log-out", function (req, res) {
   res.redirect("/sessionLogout");
@@ -122,9 +117,9 @@ app.get("/sessionLogout", (req, res) => {
   res.redirect("/sign-in");
 });
 
-app.get("/resorts", authMiddleware, async function (req, res) {
-  const feed = await userFeed.get();
-  res.render("pages/resorts/new", { user: req.user, feed });
+app.get("/dashboard", authMiddleware, async function (req, res) {
+  const feed = await ResortService.getAllResorts();
+  res.render("pages/dashboard", { user: req.user, feed });
 });
 
 app.post("/resorts", authMiddleware, async (req, res) => {
@@ -145,6 +140,11 @@ app.post("/resorts", authMiddleware, async (req, res) => {
   ).then(() => {
     res.redirect("/dashboard");
   });
+});
+
+// TODO: SHOW RESORTS
+app.get("/resorts/:id", authMiddleware, async (req, res) => {
+  res.render("pages/resorts/show");
 });
 
 exports.app = functions.https.onRequest(app);
