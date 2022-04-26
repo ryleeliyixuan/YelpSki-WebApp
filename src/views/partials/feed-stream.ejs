@@ -2,11 +2,15 @@
 <div class="card mb-3">
   <div class="row">
     <div class="col-md-4">
+      <%if(resort.data.imageUrl) {%>
+      <img class="img-fluid" alt="" src="<%=resort.data.imageUrl%>" />
+      <% }else {%>
       <img
         class="img-fluid"
         alt=""
         src="https://res.cloudinary.com/douqbebwk/image/upload/v1600103881/YelpCamp/lz8jjv2gyynjil7lswf4.png"
       />
+      <% } %>
     </div>
     <div class="col-md-8">
       <div class="card-body">

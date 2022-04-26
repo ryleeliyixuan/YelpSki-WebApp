@@ -4,6 +4,11 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
+// // store image
+// const multer = require("multer");
+// const { storage } = require("../cloudinary");
+// const upload = multer({ dest: "uploads/" }); // multer({ storage }); // store images in cloudinary
+
 const app = express();
 const port = process.env.PORT || 8080;
 const serviceAccount = require("../config/serviceAccountKey.json");
@@ -126,15 +131,20 @@ app.post("/resorts", authMiddleware, async (req, res) => {
   const userId = req.cookies.userId;
   const title = req.body.title;
   const location = req.body.location;
+  const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
 
-  ResortService.createResort(userId, title, location, price, description).then(
-    () => {
-      // res.end(JSON.stringify({ status: "success - saved to firebase!" }));
-      res.redirect("/dashboard");
-    }
-  );
+  ResortService.createResort(
+    userId,
+    title,
+    location,
+    price,
+    description,
+    imageUrl
+  ).then(() => {
+    res.redirect("/dashboard");
+  });
 });
 
 exports.app = functions.https.onRequest(app);

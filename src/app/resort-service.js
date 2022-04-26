@@ -3,13 +3,21 @@ const admin = require("firebase-admin");
 const db = admin.firestore();
 
 module.exports = {
-  createResort: async (userId, title, location, price, description) => {
+  createResort: async (
+    userId,
+    title,
+    location,
+    price,
+    description,
+    imageUrl
+  ) => {
     const res = await db.collection("resorts").add({
-      createdBy: userId,
+      userId: userId,
       title: title,
       location: location,
       price: price,
       description: description,
+      imageUrl: imageUrl,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
   },
