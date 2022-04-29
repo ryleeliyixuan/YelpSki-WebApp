@@ -1,0 +1,116 @@
+<% layout('layouts/boilerplate')%>
+<link rel="stylesheet" href="../../../../static/stylesheets/stars.css" />
+<div class="row">
+  <div class="col-6">
+    <div class="card mb-3">
+      <div class="image">
+        <%if(resort.data.imageUrl) {%>
+        <img class="img-fluid" alt="" src="<%=resort.data.imageUrl%>" />
+        <% }else {%>
+        <img
+          class="img-fluid"
+          alt=""
+          src="https://res.cloudinary.com/douqbebwk/image/upload/v1600103881/YelpCamp/lz8jjv2gyynjil7lswf4.png"
+        />
+        <% } %>
+      </div>
+      <div class="card-body">
+        <h5 class="card-title"><%= resort.data.title%></h5>
+        <p class="card-text"><%= resort.data.description%></p>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item text-muted"><%= resort.data.location%></li>
+        <li class="list-group-item">Submitted by <%= resort.data.username%></li>
+        <li class="list-group-item">$<%= resort.data.price%>/night</li>
+      </ul>
+      <% if( resort.data.userId === userId) {%>
+      <div class="card-body">
+        <form
+          class="d-inline"
+          action="/resorts/<%=resort.id%>?_method=DELETE"
+          method="POST"
+        >
+          <button class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+      <% } %>
+      <div class="card-footer text-muted">
+        Posted on <%=resort.data.timestamp.toDate()%>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div id="map"></div>
+    <h2>Leave a Review</h2>
+    <form
+      action="/resorts/<%=resort.id%>/reviews"
+      method="POST"
+      class="mb-3 validated-form"
+      novalidate
+    >
+      <fieldset class="starability-basic">
+        <input
+          type="radio"
+          id="no-rate"
+          class="input-no-rate"
+          name="rating"
+          value="1"
+          checked
+          aria-label="No rating."
+        />
+        <input type="radio" id="first-rate1" name="rating" value="1" />
+        <label for="first-rate1" title="Terrible">1 star</label>
+        <input type="radio" id="first-rate2" name="rating" value="2" />
+        <label for="first-rate2" title="Not good">2 stars</label>
+        <input type="radio" id="first-rate3" name="rating" value="3" />
+        <label for="first-rate3" title="Average">3 stars</label>
+        <input type="radio" id="first-rate4" name="rating" value="4" />
+        <label for="first-rate4" title="Very good">4 stars</label>
+        <input type="radio" id="first-rate5" name="rating" value="5" />
+        <label for="first-rate5" title="Amazing">5 stars</label>
+      </fieldset>
+      <div class="mb-3">
+        <label class="form-label" for="body">Post My Review: </label>
+        <textarea
+          class="form-control"
+          name="body"
+          id="body"
+          cols="30"
+          rows="3"
+          required
+        ></textarea>
+        <div class="valid-feedback">Looks good!</div>
+      </div>
+      <button class="btn btn-success">Submit</button>
+    </form>
+    <% reviews.forEach(function(review){ %>
+    <div class="card mb-3">
+      <div class="card-body">
+        <p class="starability-result" data-rating="<%=review.data.rating%>">
+          Rated: <%= review.data.rating %> stars
+        </p>
+        <p class="card-text mb-2"><%= review.data.username%></p>
+        <p class="card-text">Review: <%= review.data.body %></p>
+        <% if( review.data.userId === userId) {%>
+        <form
+          action="/resorts/<%=resort.id%>/reviews/<%=review.id%>"
+          method="POST"
+        >
+          <button class="btn btn-sm btn-danger">Delete</button>
+        </form>
+        <% } %>
+      </div>
+      <div class="card-footer text-muted">
+        Posted On <%= review.data.timestamp.toDate()%>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<script>
+  const mapToken = "pk.eyJ1IjoibGl5aXh1YW4xOTk4IiwiYSI6ImNsMmhyZWNzeTAwN2MzZXFvbmNlZjVmaWoifQ.Jm8zs9_kgcDM9B0DTZcLdg";
+  const resort = <%- JSON.stringify(resort) %>
+</script>
+
+<script src="../../../../static/javascripts/showPageMap.js"></script>
