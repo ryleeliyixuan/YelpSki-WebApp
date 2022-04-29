@@ -4,10 +4,6 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
-// // store image
-// const multer = require("multer");
-// const { storage } = require("../cloudinary");
-// const upload = multer({ dest: "uploads/" }); // multer({ storage }); // store images in cloudinary
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -16,16 +12,13 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-const userFeed = require("./app/user-feed");
-const UserService = require("./app/user-service"); // TODO 10: USERSERVICE
+const UserService = require("./app/user-service");
 const ResortService = require("./app/resort-service");
-
+const ReviewService = require("./app/review-service");
 const authMiddleware = require("./app/auth-middleware");
-const { nextTick } = require("process");
 
 // TODO 4: Add Boilerplate
 const ejsMate = require("ejs-mate");
-const { sign } = require("crypto");
 app.engine("ejs", ejsMate);
 // TODO 4: Add Boilerplate
 
@@ -45,7 +38,7 @@ app.use("/static", express.static("static/"));
 
 // TODO 1: Set up log out + get idToken for each request
 app.use((req, res, next) => {
-  res.locals.user = req.cookies.session;
+  res.locals.user = req.cookies.__session;
   next();
 });
 
@@ -66,29 +59,28 @@ app.post("/sessionLogin", (req, res) => {
     .createSessionCookie(idToken, { expiresIn })
     .then(
       (sessionCookie) => {
-        // Set cookie policy for session cookie.
         const options = { maxAge: expiresIn, httpOnly: true };
-        res.cookie("session", sessionCookie, options);
+        res.cookie("__session", sessionCookie, options);
 
         admin
           .auth()
           .verifySessionCookie(sessionCookie, true)
           .then((userData) => {
-            // TODO 10: Take user data and save it to firebase
-            console.log("Logged in:", userData.email);
+            req.user = userData;
+            // console.log("Logged in:", req.user);
             const id = userData.sub;
             const email = userData.email;
-            res.cookie("userId", id);
 
             if (signInType === "register") {
-              // save it to firebase
               UserService.createUser(id, email, username).then(() => {
                 res.end(
                   JSON.stringify({ status: "success - saved to firebase!" })
                 );
               });
             } else {
-              res.end(JSON.stringify({ status: "success" }));
+              UserService.getUsernameById(id).then((name) => {
+                res.end(JSON.stringify({ status: "success" }));
+              });
             }
           });
       },
@@ -112,8 +104,7 @@ app.get("/log-out", function (req, res) {
 });
 
 app.get("/sessionLogout", (req, res) => {
-  res.clearCookie("session");
-  res.clearCookie("userId");
+  res.clearCookie("__session");
   res.redirect("/sign-in");
 });
 
@@ -122,21 +113,22 @@ app.get("/dashboard", authMiddleware, async function (req, res) {
   res.render("pages/dashboard", { user: req.user, feed });
 });
 
-app.post("/resorts", authMiddleware, async (req, res) => {
-  const userId = req.cookies.userId;
-  const title = req.body.title;
-  const location = req.body.location;
-  const imageUrl = req.body.imageUrl;
-  const price = req.body.price;
-  const description = req.body.description;
+app.get("/resorts", authMiddleware, async function (req, res) {
+  res.render("pages/resorts/new");
+});
 
+app.post("/resorts", authMiddleware, async (req, res) => {
+  const userId = req.user.sub;
+  const username = req.user.email;
+  const { title, location, imageUrl, price, description } = req.body;
   ResortService.createResort(
     userId,
     title,
     location,
     price,
     description,
-    imageUrl
+    imageUrl,
+    username
   ).then(() => {
     res.redirect("/dashboard");
   });
@@ -144,8 +136,54 @@ app.post("/resorts", authMiddleware, async (req, res) => {
 
 // TODO: SHOW RESORTS
 app.get("/resorts/:id", authMiddleware, async (req, res) => {
-  res.render("pages/resorts/show");
+  const id = req.params.id;
+  const userId = req.user.sub;
+  const resort = await ResortService.getResortById(id);
+  const reviews = await ReviewService.getReviewByResort(id);
+
+  res.render("pages/resorts/show", {
+    resort: resort,
+    userId: userId,
+    reviews: reviews,
+  });
 });
+
+// TODO: DELETE RESORTS
+app.post("/resorts/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const resort = await ResortService.deleteResortById(id);
+  const review = await ReviewService.deleteReviewByResort(id);
+  res.redirect("/dashboard");
+});
+
+// TODO: SUBMIT REVIEWS
+app.post("/resorts/:id/reviews", authMiddleware, async (req, res) => {
+  const resortId = req.params.id;
+  const { rating, body } = req.body;
+  const userId = req.user.sub;
+  const username = req.user.email;
+  const review = await ReviewService.createReview(
+    resortId,
+    userId,
+    username,
+    rating,
+    body
+  );
+  const location = "/resorts/" + resortId;
+  res.redirect(location);
+});
+
+// TODO: DELETE REVIEWS
+app.post(
+  "/resorts/:resortId/reviews/:reviewId",
+  authMiddleware,
+  async (req, res) => {
+    const { resortId, reviewId } = req.params;
+    const review = await ReviewService.deleteReviewById(reviewId);
+    const location = "/resorts/" + resortId;
+    res.redirect(location);
+  }
+);
 
 exports.app = functions.https.onRequest(app);
 // app.listen(port);

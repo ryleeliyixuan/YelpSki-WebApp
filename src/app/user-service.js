@@ -20,4 +20,15 @@ module.exports = {
       return doc.data();
     }
   },
+
+  getUsernameById: async (id) => {
+    const doc = await db.collection("users").doc(id).get();
+    if (!doc.exists) {
+      console.log("No such document!");
+      return null;
+    } else {
+      const username = doc.data().username;
+      return username;
+    }
+  },
 };
